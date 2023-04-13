@@ -1,22 +1,22 @@
 import numpy as np
-import h5py
 import pandas as pd
 import tkinter as tk
 from tkinter.filedialog import askopenfilename, asksaveasfilename
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
+import pickle
+from scipy import stats # imports from here and under do not appear to be used
+from joblib import load
+import h5py
 from sklearn.model_selection import train_test_split, learning_curve
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.metrics import accuracy_score
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
-import pickle
-from scipy import stats
-from joblib import load
 
 # UI and File Opening Procedure from https://realpython.com/python-gui-tkinter/
 
-def load_model(file_path):
+def load_model(file_path): # for loading trained models from separate training code
     with open(file_path, 'rb') as f:
         model = pickle.load(f)
     return model
@@ -26,9 +26,9 @@ def open_file():
     filepath = askopenfilename(
         filetypes=[("CSV", "*.csv"), ("All Files", "*.*")]
     )
-    if not filepath:
+    if not filepath:    # return and don't do anything if user closes window or cancels
         return
-    txt_edit.delete("1.0", tk.END)
+    txt_edit.delete("1.0", tk.END)  # clear existing text in window
 
     # Open the file with the filepath
     inputDataPD = pd.read_csv(filepath)
@@ -76,7 +76,7 @@ def open_file():
 
     featuredInput.dropna(inplace=True)
     featuredInput.fillna(0.0, inplace=True)
-    #featuredInput.to_csv('inputFeatures.csv', index=False)
+    #featuredInput.to_csv('inputFeatures.csv', index=False) # uncomment to output this incremental csv
 
     columns_to_normalize = ['max','min','mean','median','range','std','var','kurt','skew']
     scaler = MinMaxScaler()
@@ -86,38 +86,41 @@ def open_file():
     # Load the trained model
     clf = load_model('model.pkl')
 
-    # The trained clf algorithm predicts the labels of the test data X_test. The predicted labels are stored in y_pred.
+    # The trained clf algorithm predicts the labels of the test input data based on its features. The predicted labels are stored in y_pred.
     y_pred = clf.predict(featuredInput)
 
-    print(y_pred)
-    #y_pred_series = pd.Series(y_pred)
     y_pred_series = pd.Series(y_pred, name="Prediction")
     y_pred_series.to_csv('y_predoutput.csv', index=False, header=True)
-    #y_pred_series.to_csv('y_predoutput.csv', index=False)
-
 
     # Print the number of rows in inputDataPD
-    print(f"Number of rows in inputDataPD: {inputDataPD.shape[0]}")
+    #print(f"Number of rows in inputDataPD: {inputDataPD.shape[0]}")
     # Print the number of entries in y_pred
-    print(f"Number of entries in y_pred: {len(y_pred)}")
+    #print(f"Number of entries in y_pred: {len(y_pred)}")
 
-    # Create a new column in inputDataPD named "Action" with NaN values
+    # Create a new column in inputDataPD named "Action_numerical" and "Action" with NaN values
+    inputDataPD["Action_numerical"] = np.nan
     inputDataPD["Action"] = np.nan
 
-    # Assign y_pred values to the new column starting from the 499th row (Python uses 0-based indexing, so use 498)
+    # Assign y_pred values to the new columns starting from the 499th row (Python uses 0-based indexing, so use 498)
     inputDataPD.loc[997:997 + len(y_pred) - 1, "Action"] = y_pred
+    inputDataPD.loc[997:997 + len(y_pred) - 1, "Action_numerical"] = y_pred
 
     # Replace 1 with "walking" and 0 with "jumping" in the "Action" column
     inputDataPD["Action"] = inputDataPD["Action"].apply(lambda x: "walking" if x == 1 else ("jumping" if x == 0 else np.nan))
 
-    inputDataPD.to_csv('finalOutputWithLabels.csv', index=False)
-    inputDataPD.dropna(inplace=True)
+    #remove the Nan values from the dataframe
+    inputDataPD = inputDataPD.dropna()
 
+    # final csv output to current directory
+    inputDataPD.to_csv('finalOutputWithLabels.csv', index=False)
+
+    # change pd options so that prints or displays of data show the full thing
     pd.set_option('display.max_rows', None)
     pd.set_option('display.max_columns', None)
     pd.set_option('display.width', None)
     pd.set_option('display.max_colwidth', None)
 
+    # put the inputDataPD into the text section of the window
     txt_edit.insert(tk.END, inputDataPD)
 
     # Extract time values from the filtered_data_input DataFrame
@@ -131,25 +134,29 @@ def open_file():
     plt.ylabel('Walking (1) or Jumping (0)')
     plt.title('Predicted Labels over Time')
 
-    # Display the plot
+    # Display the first plot
     plt.show()
 
+    # Creates a figure with the number of subplots as there are columns in the csv arranged vertically
+    fig, axs = plt.subplots(nrows=(len(inputDataPD.columns))-1, figsize=(10, 10))
 
+    # Plot each column on a separate subplot
+    for i, col in enumerate(inputDataPD.columns):
+        if col == "Action": # don't plot the column with strings.
+            continue
+        axs[i].plot(inputDataPD[col])
+        axs[i].set_title("Input Data " + col)
+        axs[i].set_xlabel('Time')
+        axs[i].set_ylabel(col)
 
-    # The accuracy_score function compares the predicted labels y_pred to the actual labels y_test and returns the accuracy
-    # accuracy = accuracy_score(y_test, y_pred)
-    # print(f"Accuracy: {accuracy * 100:.2f}%")
-    # Can't predict accuracy with real unlabeled data
+    # Display the second window of plots
+    fig.tight_layout()
+    plt.show()
 
-    """with open(filepath, mode="r", encoding="utf-8") as input_file:
-        text = input_file.read()
-        print(text)
-        txt_edit.insert(tk.END, text)"""
     window.title(f"ELEC 390 Group 35 Walk or Jump Identifier - {filepath}")
 
-
 def save_file(): #Save button not used at the moment
-    """Save the current file as a new file."""
+    """Save the current file as a new file. This is already done with the open button but this allows more flexibility"""
     filepath = asksaveasfilename(
         defaultextension=".csv",
         filetypes=[("CSV", "*.csv"), ("All Files", "*.*")],
@@ -161,6 +168,7 @@ def save_file(): #Save button not used at the moment
         output_file.write(text)
     window.title(f"ELEC 390 Group 35 Walk or Jump Identifier - {filepath}")
 
+# Configure window and buttons
 window = tk.Tk()
 window.title("ELEC 390 Group 35 Walk or Jump Identifier")
 
