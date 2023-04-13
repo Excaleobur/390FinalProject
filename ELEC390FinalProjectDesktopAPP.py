@@ -13,6 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.metrics import accuracy_score
+from tkinter import *
 
 # UI and File Opening Procedure from https://realpython.com/python-gui-tkinter/
 
@@ -22,6 +23,8 @@ def load_model(file_path): # for loading trained models from separate training c
     return model
 
 def open_file():
+    lbckg.grid_forget()
+    
     """Open a file for editing."""
     filepath = askopenfilename(
         filetypes=[("CSV", "*.csv"), ("All Files", "*.*")]
@@ -174,11 +177,14 @@ window.title("ELEC 390 Group 35 Walk or Jump Identifier")
 
 window.rowconfigure(0, minsize=800, weight=1)
 window.columnconfigure(1, minsize=800, weight=1)
+bckg = tk.PhotoImage(file = 'BackgroundGUI.png')
+lbckg = Label(window, image=bckg)
+lbckg.grid(row = 0, column = 0)
 
 txt_edit = tk.Text(window)
 frm_buttons = tk.Frame(window, relief=tk.RAISED, bd=2)
-btn_open = tk.Button(frm_buttons, text="Open", command=open_file)
-btn_save = tk.Button(frm_buttons, text="Save As...", command=save_file)
+btn_open = tk.Button(frm_buttons, text="Open", command=open_file, bg='#B8E2F2', activebackground='#808080')
+btn_save = tk.Button(frm_buttons, text="Save As...", bg='#FF7E82', activebackground='#808080', command=save_file)
 
 btn_open.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
 btn_save.grid(row=1, column=0, sticky="ew", padx=5)
