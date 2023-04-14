@@ -175,11 +175,14 @@ def save_file(): #Save button not used at the moment
 window = tk.Tk()
 window.title("ELEC 390 Group 35 Walk or Jump Identifier")
 
+#creating the overall window size and setting the background on the desktop application
 window.rowconfigure(0, minsize=800, weight=1)
 window.columnconfigure(1, minsize=800, weight=1)
 bckg = tk.PhotoImage(file = 'BackgroundGUI.png')
 lbckg = Label(window, image=bckg)
 lbckg.grid(row = 0, column = 0)
+
+#creating buttons to use on the desktop
 
 txt_edit = tk.Text(window)
 frm_buttons = tk.Frame(window, relief=tk.RAISED, bd=2)
